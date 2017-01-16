@@ -1,0 +1,24 @@
+# Helpers
+
+defmodule Trkkr.Helpers do
+  @moduledoc """
+  A few small helpers to write cleaner or more performant code.
+  """
+
+  @doc "A parallel Enum.map"
+  def pmap(collection, func) do
+    collection
+    |> Enum.map(&(Task.async(fn -> func.(&1) end)))
+    |> Enum.map(&Task.await/1)
+  end
+
+  def to_struct(kind, attrs) do
+    struct = struct(kind)
+    Enum.reduce Map.to_list(struct), struct, fn {k, _}, acc ->
+      case Map.fetch(attrs, Atom.to_string(k)) do
+        {:ok, v} -> %{acc | k => v}
+        :error -> acc
+      end
+    end
+  end
+end
