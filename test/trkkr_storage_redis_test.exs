@@ -1,10 +1,11 @@
-# Trkkr.Storage.Memory Tests.
+# Trkkr.Storage.Redis Tests.
+# Since redis stores no type info, everything is a string.
 
-defmodule TrkkrStoreMemoryTest do
+defmodule TrkkrStorageRedisTest do
   use ExUnit.Case, async: true
-  doctest Trkkr.Storage.Memory
+  doctest Trkkr.Storage.Redis
 
-  import Trkkr.Storage.Memory
+  import Trkkr.Storage.Redis
 
   # Basics.
   test "store" do
@@ -28,33 +29,33 @@ defmodule TrkkrStoreMemoryTest do
  
   # Sets.
   test "set_store" do
-    assert set_store("set_store_test", [1, 2, 3])
+    assert set_store("set_store_test", ["1", "2", "3"])
   end
   test "set_fetch" do
-    assert set_store("set_fetch_test", [1, 2, 3])
-    assert set_fetch("set_fetch_test") == [1, 2, 3]
+    assert set_store("set_fetch_test", ["1", "2", "3"])
+    assert set_fetch("set_fetch_test") == ["1", "2", "3"]
   end
   test "set_length?" do
-    assert set_store("set_length_test", [1, 2, 3])
+    assert set_store("set_length_test", ["1", "2", "3"])
     assert set_length?("set_length_test") == 3
   end
   test "set_add" do
-    assert set_store("set_add_test", [1, 2])
-    assert set_add("set_add_test", 3)
-    assert set_fetch("set_add_test") == [1, 2, 3]
+    assert set_store("set_add_test", ["1", "2"])
+    assert set_add("set_add_test", "3")
+    assert set_fetch("set_add_test") == ["1", "2", "3"]
   end
   test "set_remove" do
-    assert set_store("set_remove_test", [1, 2, 3])
-    assert set_remove("set_remove_test", 2)
-    assert set_remove("set_remove_test", 2)
-    assert set_fetch("set_remove_test") == [1, 3]
+    assert set_store("set_remove_test", ["1", "2", "3"])
+    assert set_remove("set_remove_test", "2")
+    assert set_remove("set_remove_test", "2")
+    assert set_fetch("set_remove_test") == ["1", "3"]
   
     assert set_store("set_remove_test2", [])
-    assert set_remove("set_remove_test2", 1)
+    assert set_remove("set_remove_test2", "1")
     assert set_fetch("set_remove_test2") == []
   end
   test "set_delete" do
-    assert set_store("set_delete_test", [1, 2, 3])
+    assert set_store("set_delete_test", ["1", "2", "3"])
     assert set_delete("set_delete_test")
     assert fetch("set_delete_test") == nil
   end

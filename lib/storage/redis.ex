@@ -50,7 +50,13 @@ defmodule Trkkr.Storage.Redis do
 
   # Fetching operations
   def fetch(key) do
-    getclient() |> get("trkkr_" <> key)
+    resp = getclient()
+           |> get("trkkr_" <> key)
+    if resp == :undefined do
+      nil
+    else
+      resp
+    end
   end
   def set_fetch(key) do
     getclient() |> smembers("trkkr_" <> key)
@@ -58,7 +64,10 @@ defmodule Trkkr.Storage.Redis do
 
   # Delete operations
   def delete(key) do
-    getclient() |> del("trkkr_" <> key)
+    case getclient() |> del("trkkr_" <> key) do
+      1 -> :ok
+      0 -> :error
+    end
   end
   def set_remove(key, value) do
     getclient() |> srem("trkkr_" <> key, value)
@@ -84,5 +93,10 @@ defmodule Trkkr.Storage.Redis do
       1 -> true
       0 -> false
     end
+  end
+  def set_length?(key) do
+    getclient()
+    |> scard("trkkr_" <> key)
+    |> String.to_integer
   end
 end

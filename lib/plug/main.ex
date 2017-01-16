@@ -11,7 +11,10 @@ defmodule Trkkr.Plug.Main do
   use Plug.Router
 
   plug Plug.Logger
-  plug Plug.Parsers, parsers: [:multipart, :urlencoded]
+  plug Plug.Parsers, parsers: [:multipart, :urlencoded],
+                     length: 10_000,
+                     read_length: 10_000,
+                     read_timeout: 1_000
   plug Trkkr.Plug.TrkkrAPI
 
   plug :match
