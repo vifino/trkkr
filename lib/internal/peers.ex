@@ -134,9 +134,19 @@ defmodule Trkkr.Internal.Peers do
   end
 
   def seeders?(info_hash) do
-    Memory.set_length?("peers_completed_" <> info_hash)
+    len = Memory.set_length?("peers_completed_" <> info_hash)
+    if len == nil do
+      0
+    else
+      len
+    end
   end
   def leechers?(info_hash) do
-    Memory.set_length?("peers_incomplete_" <> info_hash)
+    len = Memory.set_length?("peers_incomplete_" <> info_hash)
+    if len == nil do
+      0
+    else
+      len
+    end
   end
  end

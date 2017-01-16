@@ -1,7 +1,5 @@
 # Main Plug stuff.
-# Glues all the stuff together.
-
-require IEx
+# Glues all the plugs together.
 
 defmodule Trkkr.Plug.Main do
   @moduledoc """

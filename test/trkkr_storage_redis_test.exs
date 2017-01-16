@@ -26,7 +26,17 @@ defmodule TrkkrStorageRedisTest do
     assert delete("delete_test") == :ok
     assert fetch("delete_test") == nil
   end
- 
+  test "add" do
+    assert store("add_test", 9)
+    assert add("add_test", 1) == 10
+    assert fetch("add_test") == "10"
+  end
+  test "substract" do
+    assert store("substract_test", 10)
+    assert substract("substract_test", 1) == 9
+    assert fetch("substract_test") == "9"
+  end
+
   # Sets.
   test "set_store" do
     assert set_store("set_store_test", ["1", "2", "3"])
@@ -49,7 +59,7 @@ defmodule TrkkrStorageRedisTest do
     assert set_remove("set_remove_test", "2")
     assert set_remove("set_remove_test", "2")
     assert set_fetch("set_remove_test") == ["1", "3"]
-  
+
     assert set_store("set_remove_test2", [])
     assert set_remove("set_remove_test2", "1")
     assert set_fetch("set_remove_test2") == []

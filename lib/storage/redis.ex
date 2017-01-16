@@ -38,6 +38,12 @@ defmodule Trkkr.Storage.Redis do
   def store(key, value) do
     getclient() |> set("trkkr_" <> key, value)
   end
+  def add(key, num \\ 1) do
+    getclient() |> incrby("trkkr_" <> key, num)
+  end
+  def substract(key, num \\ 1) do
+    getclient() |> decrby("trkkr_" <> key, num)
+  end
   def set_store(key, values) do
     nkey = "trkkr_" <> key
     client = getclient()
@@ -85,6 +91,7 @@ defmodule Trkkr.Storage.Redis do
     # Probably very bad to do it this way, but whatever.
     getclient()
     |> keys("trkkr_" <> escape_pattern(beginning) <> "*")
+    |> Trkkr.Helpers.pmap(fn str -> String.trim_leading(str, "trkkr_") end)
   end
 
   # Checking functions

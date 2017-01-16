@@ -13,12 +13,25 @@ defmodule Trkkr.Plug.TrkkrAPI do
     %{
       err_invalid_request: gen_failmsg("The request is invalid and lacks one or more options."),
       err_unknown_torrent: gen_failmsg("Torrent not known to this Tracker."),
+      err_scrape_unknown_torrent: Bento.encode! %{"files" => %{},
+                                                  "failure reason" => "Torrent not known to this Tracker."}
     }
   end
 
+  # "Generic" Helpers
   defp common(conn) do
     conn
     |> Plug.Conn.fetch_query_params
+  end
+
+  # /scrape helpers
+  defp scrape_pack_info(info_hash) do
+    %{
+		  "name" => Trkkr.Internal.Torrent.name?(info_hash),
+		  "complete" => Trkkr.Internal.Peers.seeders?(info_hash),
+		  "incomplete" => Trkkr.Internal.Peers.leechers?(info_hash),
+		  "downloaded" => Trkkr.Internal.Torrent.completed?(info_hash)
+		}
   end
 
   @doc """
@@ -26,7 +39,7 @@ defmodule Trkkr.Plug.TrkkrAPI do
   Since we are in a "whitelist" mode, we
   need to add the torrent to get the metadata,
   info_hash and such.
-  
+
   tl;dr curl -F"name=mytorrent" -F"torrent=@/path/to/mytorrent.torrent" server:port/new_torrent
   """
   def call(%Plug.Conn{request_path: "/new_torrent", method: "POST"} = conn, _opts) do
@@ -63,7 +76,7 @@ defmodule Trkkr.Plug.TrkkrAPI do
               :error -> Plug.Conn.send_resp(conn, 400, returnval) |> Plug.Conn.halt
             end
           else
-            Plug.Conn.send_resp(conn, 400, "Couldn't decode torrent. You sure it's correct?") 
+            Plug.Conn.send_resp(conn, 400, "Couldn't decode torrent. You sure it's correct?")
             |> Plug.Conn.halt
           end
       end
@@ -114,8 +127,33 @@ defmodule Trkkr.Plug.TrkkrAPI do
   documented here: https://groups.yahoo.com/neo/groups/BitTorrent/conversations/topics/3275
   """
   def call(%Plug.Conn{request_path: "/scrape", method: "GET"} = conn, opts) do
-    # TODO: Make not stub.
-    conn
+    # TODO: Make less stub.
+    IO.puts "These fuckers are /scrape-ing!"
+    conn = common(conn) |> Plug.Conn.put_resp_content_type("text/plain")
+    params = conn.query_params
+    if params["info_hash"] != nil do # only wants info for a single torrent
+      info_hash = params["info_hash"]
+      if !Trkkr.Internal.Torrent.exists? info_hash do
+        # invalid torrent, send them an error message.
+        conn
+        |> Plug.Conn.send_resp(200, opts.err_scrape_unknown_torrent)
+				|> Plug.Conn.halt
+      else
+		    conn
+		    |> Plug.Conn.send_resp(200, Bento.encode! %{
+          "files" => %{info_hash => scrape_pack_info(info_hash)}
+        })
+        |> Plug.Conn.halt
+      end
+    else # wants *all* the torrent infos. greedy bastard.
+      files = Trkkr.Internal.Torrent.list_torrents!
+              |> Enum.reduce(%{}, fn(info_hash, acc) -> 
+                Map.put(acc, info_hash, scrape_pack_info(info_hash))
+              end)
+      conn
+      |> Plug.Conn.send_resp(200, Bento.encode! %{"files" => files})
+      |> Plug.Conn.halt
+    end
   end
 
   # Default
