@@ -25,7 +25,7 @@ defmodule Trkkr.Plug.TrkkrAPI do
   end
 
   # /scrape helpers
-  defp scrape_pack_info(info_hash) do
+  def scrape_pack_info(info_hash) do
     %{
 		  "name" => Trkkr.Internal.Torrent.name?(info_hash),
 		  "complete" => Trkkr.Internal.Peers.seeders?(info_hash),

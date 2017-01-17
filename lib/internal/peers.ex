@@ -11,6 +11,7 @@ defmodule Trkkr.Internal.Peers do
   """
 
   alias Trkkr.Storage.Memory
+  alias Trkkr.Storage.Redis
 
   # Helpers
   defp peerinfo2list(peer) do
@@ -63,7 +64,7 @@ defmodule Trkkr.Internal.Peers do
         Memory.set_remove("peers_incomplete_" <> info_hash, peerinfo["peer_id"])
         Memory.set_add("peers_completed_" <> info_hash, peerinfo["peer_id"])
         if peerinfo["event"] == "completed" do
-          Memory.add("completed_" <> info_hash, 1)
+          Redis.add("completed_" <> info_hash, 1)
         end
       else
         Memory.set_add("peers_incomplete_" <> info_hash, peerinfo["peer_id"])
