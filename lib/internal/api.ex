@@ -43,7 +43,7 @@ defmodule Trkkr.Internal.API do
     if Trkkr.Internal.Torrent.exists? params["info_hash"] do
       # Okay, we got a valid update for a torrent which we track, too.
       # Now we need to handle the shit out of that request. Halleluja.
-      
+
       # First, keep track of that peer and it's status.
       Trkkr.Internal.Peers.updatepeer(params["info_hash"], params)
       # Second, generate a response! Yaaay.
@@ -51,7 +51,7 @@ defmodule Trkkr.Internal.API do
       # the callee will most likely bencode it and send it to
       # the client, where it belongs.
       peers = Trkkr.Internal.Peers.getpeers_smart(params)
-              |> Trkkr.Helpers.pmap(fn peer -> %{"peer id" => peer["peer_id"], 
+              |> Trkkr.Helpers.pmap(fn peer -> %{"peer id" => peer["peer_id"],
                                                  "ip" => peer["ip"], "port" => peer["port"]} end)
 
       @peer_update_map_template

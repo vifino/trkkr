@@ -6,6 +6,11 @@ defmodule Trkkr.Plug.TrkkrAPI do
   This module provides two API endpoints, /announce and /scrape.
   """
 
+  import Plug.Conn
+  alias Trkkr.Internal.API
+  alias Trkkr.Internal.Torrent
+  alias Trkkr.Internal.Peers
+
   # /announce and such error messages.
   def gen_failmsg(msg), do: Bento.encode! %{"failure reason" => msg}
 
@@ -21,16 +26,16 @@ defmodule Trkkr.Plug.TrkkrAPI do
   # "Generic" Helpers
   defp common(conn) do
     conn
-    |> Plug.Conn.fetch_query_params
+    |> fetch_query_params
   end
 
   # /scrape helpers
   def scrape_pack_info(info_hash) do
     %{
-		  "name" => Trkkr.Internal.Torrent.name?(info_hash),
-		  "complete" => Trkkr.Internal.Peers.seeders?(info_hash),
-		  "incomplete" => Trkkr.Internal.Peers.leechers?(info_hash),
-		  "downloaded" => Trkkr.Internal.Torrent.completed?(info_hash)
+		  "name" => Torrent.name?(info_hash),
+		  "complete" => Peers.seeders?(info_hash),
+		  "incomplete" => Peers.leechers?(info_hash),
+		  "downloaded" => Torrent.completed?(info_hash)
 		}
   end
 
@@ -44,10 +49,10 @@ defmodule Trkkr.Plug.TrkkrAPI do
   """
   def call(%Plug.Conn{request_path: "/new_torrent", method: "POST"} = conn, _opts) do
     IO.puts "/new_torrent omg"
-    conn = common(conn) |> Plug.Conn.put_resp_content_type("text/plain")
+    conn = common(conn) |> put_resp_content_type("text/plain")
     if conn.params["torrent"] == nil do
-      Plug.Conn.send_resp(conn, 400, "Uhm, you need to provide the torrent data too, ya know?")
-      |> Plug.Conn.halt
+      send_resp(conn, 400, "Uhm, you need to provide the torrent data too, ya know?")
+      |> halt
     else
       torrent_checker = cond do
         %Plug.Upload{filename: name, path: path} = conn.params["torrent"] ->
@@ -65,19 +70,19 @@ defmodule Trkkr.Plug.TrkkrAPI do
       end
       cond do
         elem(torrent_checker, 0) == :error ->
-          Plug.Conn.send_resp(conn, 400, elem(torrent_checker, 1)) |> Plug.Conn.halt
+          send_resp(conn, 400, elem(torrent_checker, 1)) |> halt
         elem(torrent_checker, 0) == :ok ->
           {:ok, name, torrent_data} = torrent_checker
           {success, metadata} = Bento.decode(torrent_data)
           if success == :ok do
-            {retstatus, returnval} = Trkkr.Internal.API.new_torrent(metadata, name)
+            {retstatus, returnval} = API.new_torrent(metadata, name)
             case retstatus do
-              :ok -> Plug.Conn.send_resp(conn, 200, Base.encode16(returnval)) |> Plug.Conn.halt
-              :error -> Plug.Conn.send_resp(conn, 400, returnval) |> Plug.Conn.halt
+              :ok -> send_resp(conn, 200, Base.encode16(returnval)) |> halt
+              :error -> send_resp(conn, 400, returnval) |> halt
             end
           else
-            Plug.Conn.send_resp(conn, 400, "Couldn't decode torrent. You sure it's correct?")
-            |> Plug.Conn.halt
+            send_resp(conn, 400, "Couldn't decode torrent. You sure it's correct?")
+            |> halt
           end
       end
     end
@@ -88,7 +93,7 @@ defmodule Trkkr.Plug.TrkkrAPI do
   """
   def call(%Plug.Conn{request_path: "/announce", method: "GET"} = conn, opts) do
     IO.puts "Oh shit, an /announce"
-    conn = common(conn) |> Plug.Conn.put_resp_content_type("text/plain")
+    conn = common(conn) |> put_resp_content_type("text/plain")
     params = Trkkr.Parser.Announce.parse!(conn.query_params)
     valid = cond do
       params["info_hash"] == nil -> false
@@ -104,20 +109,20 @@ defmodule Trkkr.Plug.TrkkrAPI do
         params["ip"] == nil -> Map.put(params, "ip", conn.remote_ip |> Tuple.to_list |> Enum.join("."))
         true -> params
       end
-      peer_resp = Trkkr.Internal.API.peer_update(new_params)
+      peer_resp = API.peer_update(new_params)
       if peer_resp != nil do
         conn
-        |> Plug.Conn.send_resp(200, Bento.encode! peer_resp)
-        |> Plug.Conn.halt
+        |> send_resp(200, Bento.encode! peer_resp)
+        |> halt
       else
         conn
-        |> Plug.Conn.send_resp(200, opts.err_unknown_torrent)
-        |> Plug.Conn.halt
+        |> send_resp(200, opts.err_unknown_torrent)
+        |> halt
       end
     else
       conn
-      |> Plug.Conn.send_resp(400, opts.err_invalid_request)
-      |> Plug.Conn.halt
+      |> send_resp(400, opts.err_invalid_request)
+      |> halt
     end
   end
 
@@ -127,32 +132,31 @@ defmodule Trkkr.Plug.TrkkrAPI do
   documented here: https://groups.yahoo.com/neo/groups/BitTorrent/conversations/topics/3275
   """
   def call(%Plug.Conn{request_path: "/scrape", method: "GET"} = conn, opts) do
-    # TODO: Make less stub.
     IO.puts "These fuckers are /scrape-ing!"
-    conn = common(conn) |> Plug.Conn.put_resp_content_type("text/plain")
+    conn = common(conn) |> put_resp_content_type("text/plain")
     params = conn.query_params
     if params["info_hash"] != nil do # only wants info for a single torrent
       info_hash = params["info_hash"]
-      if !Trkkr.Internal.Torrent.exists? info_hash do
+      if !Torrent.exists? info_hash do
         # invalid torrent, send them an error message.
         conn
-        |> Plug.Conn.send_resp(200, opts.err_scrape_unknown_torrent)
-				|> Plug.Conn.halt
+        |> send_resp(200, opts.err_scrape_unknown_torrent)
+				|> halt
       else
 		    conn
-		    |> Plug.Conn.send_resp(200, Bento.encode! %{
+		    |> send_resp(200, Bento.encode! %{
           "files" => %{info_hash => scrape_pack_info(info_hash)}
         })
-        |> Plug.Conn.halt
+        |> halt
       end
     else # wants *all* the torrent infos. greedy bastard.
-      files = Trkkr.Internal.Torrent.list_torrents!
-              |> Enum.reduce(%{}, fn(info_hash, acc) -> 
+      files = Torrent.list_torrents!
+              |> Enum.reduce(%{}, fn(info_hash, acc) ->
                 Map.put(acc, info_hash, scrape_pack_info(info_hash))
               end)
       conn
-      |> Plug.Conn.send_resp(200, Bento.encode! %{"files" => files})
-      |> Plug.Conn.halt
+      |> send_resp(200, Bento.encode! %{"files" => files})
+      |> halt
     end
   end
 

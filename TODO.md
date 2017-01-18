@@ -26,6 +26,7 @@
 
 * [ ] Port to Phoenix and write a web ui?
   - First part is definitly possible, has quite a few nifty things.
+    - But it is fucking huge. Like, really. The hello world app has more code than this.
   - Second part? Ehhh, I don't like web dev. Maybe I'll get someone to do the fancy stuff and I'll just plug in values.
 
 * [ ] Performance metrics?

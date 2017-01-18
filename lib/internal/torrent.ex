@@ -12,12 +12,15 @@ defmodule Trkkr.Internal.Torrent do
   function.
   """
 
+  alias Trkkr.Storage.Redis
+  alias Trkkr.Internal.Peers
+
   # Helper-esque things.
   def gen_info_hash!(info) do
     :crypto.hash(:sha, Bento.encode!(info))
   end
   defp store_torrent!(info_hash, metadata) do
-    Trkkr.Storage.Redis.store("md_" <> info_hash, Bento.encode!(metadata))
+    Redis.store("md_" <> info_hash, Bento.encode!(metadata))
     :ok
   end
 
@@ -27,46 +30,46 @@ defmodule Trkkr.Internal.Torrent do
     |> new_torrent!(metadata, name)
   end
   def new_torrent!(info_hash, metadata, name) do
-    Trkkr.Storage.Redis.store("title_" <> info_hash, name)
+    Redis.store("title_" <> info_hash, name)
     store_torrent!(info_hash, metadata)
-    Trkkr.Internal.Peers.handle_newtorrent(info_hash)
+    Peers.handle_newtorrent(info_hash)
     {:ok, info_hash}
   end
 
   def get_torrent!(info_hash) do
-    metadata = Trkkr.Storage.Redis.fetch("md_" <> info_hash)
+    metadata = Redis.fetch("md_" <> info_hash)
                |> Bento.decode!
-    title = Trkkr.Storage.Redis.fetch("title_" <> info_hash)
+    title = Redis.fetch("title_" <> info_hash)
     {title, metadata}
   end
 
   def del_torrent!(info_hash) do
     # Now, we have to do a bit more cleanup.
-    Trkkr.Storage.Redis.delete("md_" <> info_hash)
-    Trkkr.Storage.Redis.delete("title_" <> info_hash)
-    Trkkr.Internal.Peers.delpeers(info_hash)
+    Redis.delete("md_" <> info_hash)
+    Redis.delete("title_" <> info_hash)
+    Peers.delpeers(info_hash)
   end
 
   def add_completed(info_hash) do
-    Trkkr.Storage.Redis.add("completed_" <> info_hash)
+    Redis.add("completed_" <> info_hash)
   end
 
   # "Question" section
   def list_torrents!() do
-    Trkkr.Storage.Redis.find("md_")
+    Redis.find("md_")
     |> Trkkr.Helpers.pmap(fn str -> String.trim_leading(str, "md_") end)
   end
 
   def exists?(info_hash) do
-    Trkkr.Storage.Redis.exists?("md_" <> info_hash)
+    Redis.exists?("md_" <> info_hash)
   end
 
   def name?(info_hash) do
-    Trkkr.Storage.Redis.fetch("title_" <> info_hash)
+    Redis.fetch("title_" <> info_hash)
   end
 
   def completed?(info_hash) do
-    completed = Trkkr.Storage.Redis.fetch("completed_" <> info_hash)
+    completed = Redis.fetch("completed_" <> info_hash)
     if completed != nil do
       completed
     else
