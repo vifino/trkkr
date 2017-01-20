@@ -8,19 +8,27 @@ Because:
 - I was bored and programming is fun.
 - Made it cause I can. Severe lack of ego inflation was bad for my health.
 
+## Dependencies
+
+You need:
+- Linux (should also work on FreeBSD)
+- Erlang/OTP 18+ (using the latest is recommended)
+- Elixir v1.4 (later should also work, hopefully)
+- A Redis instance
+  - Does not need to be on the same machine/container, does not need the native libs.
+- An Internet connection to fetch the dependencies.
+
 ## Installation
 
-1) Install OTP and Elixir v1.4.
+1) Install dependencies above.
 
 2) Clone the repo.
 
-3) `mix deps.get`
+3) Run `mix deps.get` to fetch the required libraries.
 
-4) Set up Redis.
+4) Edit config.
 
-5) Edit config.
-
-6) `iex -S mix`
+5) Run `iex -S mix` to start it.
 
 # Something broke?
 Create a detailed Issue. Or make a PR with a fix.
@@ -39,5 +47,6 @@ If some feature is missing from [the BitTorrent Specification](btspec) in this t
 TODO or a bug.
 
 [btspec]: https://wiki.theory.org/BitTorrentSpecification
+
 # License
 BSD 3-clause.
