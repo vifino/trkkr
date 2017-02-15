@@ -40,12 +40,13 @@ defmodule Trkkr.Internal.API do
   @doc "Handles peer updates, aka requests to /announce."
   def peer_update(params) do
     IO.puts "API.peer_update"
-    if Trkkr.Internal.Torrent.exists? params["info_hash"] do
+    info_hash = params["info_hash"]
+    if Trkkr.Internal.Torrent.exists? info_hash do
       # Okay, we got a valid update for a torrent which we track, too.
       # Now we need to handle the shit out of that request. Halleluja.
 
       # First, keep track of that peer and it's status.
-      Trkkr.Internal.Peers.updatepeer(params["info_hash"], params)
+      Trkkr.Internal.Peers.updatepeer(info_hash, params)
       # Second, generate a response! Yaaay.
       # So, we'll generate a map with all the stuff required,
       # the callee will most likely bencode it and send it to

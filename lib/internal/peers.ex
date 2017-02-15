@@ -15,11 +15,12 @@ defmodule Trkkr.Internal.Peers do
 
   # Helpers
   defp peerinfo2list(peer) do
-    [peer["ip"], peer["port"], peer["uploaded"], peer["downloaded"], peer["left"], peer["key"]]
+    [peer["peer_id"], peer["ip"], peer["port"], peer["uploaded"], peer["downloaded"], peer["left"], peer["key"]]
   end
   defp list2peerinfo(list) do
-    [ip, port, uploaded, downloaded, left, key] = list
+    [peerid, ip, port, uploaded, downloaded, left, key] = list
     %{
+      "peer_id" => peerid,
       "ip" => ip,
       "port" => port,
       "uploaded" => uploaded,
